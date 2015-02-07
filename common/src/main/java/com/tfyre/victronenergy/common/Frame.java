@@ -59,8 +59,8 @@ public abstract class Frame {
                         .withData(data);
             default:
                 LOG.severe(String.format("Invalid Frame: %s", Common.toHex(data)));
-                System.exit(1);
-                throw new RuntimeException("Invalid Frame");
+                return new FrameInvalid()
+                        .withData(data);
         }
     }
 
@@ -72,8 +72,8 @@ public abstract class Frame {
                 return fromDataFF(data);
             default:
                 LOG.severe(String.format("Invalid Frame: %s", Common.toHex(data)));
-                System.exit(1);
-                throw new RuntimeException("Invalid Frame");
+                return new FrameInvalid()
+                        .withData(data);
         }
     }
 

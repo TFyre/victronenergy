@@ -10,6 +10,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.tfyre.victronenergy.common.CallbackInterface;
 import com.tfyre.victronenergy.common.Command;
+import com.tfyre.victronenergy.common.Common;
 import com.tfyre.victronenergy.common.DeviceSettings;
 import com.tfyre.victronenergy.common.Frame;
 import com.tfyre.victronenergy.common.FrameAddress;
@@ -17,6 +18,7 @@ import com.tfyre.victronenergy.common.FrameCommand;
 import com.tfyre.victronenergy.common.FrameInfo;
 import com.tfyre.victronenergy.common.FrameInfoAC;
 import com.tfyre.victronenergy.common.FrameInfoDC;
+import com.tfyre.victronenergy.common.FrameInvalid;
 import com.tfyre.victronenergy.common.FrameLED;
 import com.tfyre.victronenergy.common.FrameReset;
 import com.tfyre.victronenergy.common.FrameVersion;
@@ -167,7 +169,9 @@ public class NewMain implements CallbackInterface, HttpHandler {
             final String msg = String.format("Voltage: %.2f change[%.2f]", newVoltage, lastVoltage - newVoltage);
             lastVoltage = newVoltage;
             sendWhatsApp(FRANCOIS, msg);
-            sendWhatsApp(DANELLE, msg);
+            if (lastVoltage != 100) {
+                sendWhatsApp(DANELLE, msg);
+            }
         }
         deviceSettings.setFrameInfoAC(frame);
         if (LOG.isLoggable(Level.FINER)) {
@@ -207,7 +211,10 @@ public class NewMain implements CallbackInterface, HttpHandler {
             handleFrameInfoAC((FrameInfoAC) frame);
         } else if (frame instanceof FrameLED) {
             handleFrameLED((FrameLED) frame);
+        } else if (frame instanceof FrameInvalid) {
+            sendWhatsApp(FRANCOIS, "Invalid Frame: "+Common.toHex(frame.getData()));
         }
+       
     }
 
     private boolean processQueue() {
