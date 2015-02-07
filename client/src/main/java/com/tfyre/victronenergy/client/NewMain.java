@@ -5,6 +5,9 @@
  */
 package com.tfyre.victronenergy.client;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import com.tfyre.victronenergy.common.CallbackInterface;
 import com.tfyre.victronenergy.common.Command;
 import com.tfyre.victronenergy.common.DeviceSettings;
@@ -19,6 +22,17 @@ import com.tfyre.victronenergy.common.FrameReset;
 import com.tfyre.victronenergy.common.FrameVersion;
 import com.tfyre.victronenergy.common.RAMVariable;
 import com.tfyre.victronenergy.common.Socket;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,30 +41,36 @@ import java.util.logging.Logger;
  *
  * @author acid
  */
-public class NewMain implements CallbackInterface {
+public class NewMain implements CallbackInterface, HttpHandler {
 
     private static final Logger LOG = Logger.getLogger(NewMain.class.getName());
+    private static final String FRANCOIS = "27829403901";
+    private static final String DANELLE = "27823066444";
     private final Queue<Frame> queue = new java.util.concurrent.LinkedBlockingQueue<>();
     private final Socket socket;
+    private final HttpServer httpServer;
     private long lastInfo;
     private int nextW;
     private int info;
     private boolean hasSettings;
     private RAMVariable ramVariable;
+    private double lastVoltage;
 
     private final DeviceSettings deviceSettings = new DeviceSettings();
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         LOG.info("starting");
         final NewMain _main = new NewMain();
         _main.run();
     }
 
-    public NewMain() {
+    public NewMain() throws IOException {
+        lastVoltage = -200;
         socket = new Socket(this);
+        httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
     }
 
     private void handleFrameAddress(final FrameAddress frame) {
@@ -112,23 +132,61 @@ public class NewMain implements CallbackInterface {
     }
 
     private void handleFrameInfoDC(final FrameInfoDC frame) {
-        System.out.println("DC Voltage: " + deviceSettings.getScaledValue1(RAMVariable.UBAT, frame.getVoltageFactor()));
-        System.out.println("DC Inverter: " + deviceSettings.getScaledValue1(RAMVariable.IBAT, frame.getCurrentInverterFactor()));
-        System.out.println("DC Charger: " + deviceSettings.getScaledValue1(RAMVariable.IBAT, frame.getCurrentChargerFactor()));
-        System.out.println("DC Freq: " + deviceSettings.getScaledValue2(RAMVariable.ITIME, frame.getPeriodFactor()));
+        deviceSettings.setFrameInfoDC(frame);
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(deviceSettings.getFrameInfoDCData());
+        }
+    }
+
+    private void sendWhatsApp(final String to, final String msg) {
+        try {
+            final URL url = new URL(String.format("http://10.1.0.20:8000/send?to=%s&msg=%s", to, URLEncoder.encode(msg, "UTF-8")));
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine(url.toString());
+            }
+            final StringBuilder sb = new StringBuilder();
+            try (final BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    sb.append(inputLine);
+                    sb.append("\n");
+                }
+            }
+            LOG.info(String.format("WA Message: %s - %s - %s", to, sb.toString().trim(), msg));
+        } catch (IOException ex) {
+            LOG.log(Level.SEVERE, ex.getMessage(), ex);
+        }
+
     }
 
     private void handleFrameInfoAC(final FrameInfoAC frame) {
-        System.out.println("Input Voltage: " + deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor()));
-        System.out.println("Input Current: " + deviceSettings.getScaledValue3(RAMVariable.IMAIN, frame.getCurrentFactor(), frame.getBackfeedFactor()));
-        System.out.println("Inverter Voltage: " + deviceSettings.getScaledValue1(RAMVariable.UINVERTER, frame.getInverterVoltageFactor()));
-        System.out.println("Inverter Current: " + deviceSettings.getScaledValue3(RAMVariable.IINVERTER, frame.getInverterCurrentFactor(), frame.getInverterFactor()));
-        System.out.println("Input Freq: " + deviceSettings.getScaledValue2(RAMVariable.MTIME, frame.getPeriodFactor()));
+        if (lastVoltage < 0) {
+            lastVoltage = deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor());
+            final String msg = String.format("Voltage: %.2f", lastVoltage);
+            sendWhatsApp(FRANCOIS, msg);
+        }
+        deviceSettings.setFrameInfoAC(frame);
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(deviceSettings.getFrameInfoACData());
+        }
+    }
+
+    private void handleFrameLED(final FrameLED frame) {
+        deviceSettings.setFrameLED(frame);
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(deviceSettings.getFrameLEDData());
+        }
     }
 
     private void handleFrame(final Frame frame) {
-        if (LOG.isLoggable(Level.FINE)) {
-            LOG.fine(String.format("%s - %s", frame.getClass().getSimpleName(), frame.toString()));
+        if (frame instanceof FrameVersion) {
+            if (LOG.isLoggable(Level.FINER)) {
+                LOG.finer(String.format("%s - %s", frame.getClass().getSimpleName(), frame.toString()));
+            }
+        } else {
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine(String.format("%s - %s", frame.getClass().getSimpleName(), frame.toString()));
+            }
         }
         if (frame instanceof FrameAddress) {
             handleFrameAddress((FrameAddress) frame);
@@ -138,6 +196,8 @@ public class NewMain implements CallbackInterface {
             handleFrameInfoDC((FrameInfoDC) frame);
         } else if (frame instanceof FrameInfoAC) {
             handleFrameInfoAC((FrameInfoAC) frame);
+        } else if (frame instanceof FrameLED) {
+            handleFrameLED((FrameLED) frame);
         }
     }
 
@@ -210,6 +270,9 @@ public class NewMain implements CallbackInterface {
     }
 
     private void run() {
+        httpServer.createContext("/", this);
+        httpServer.setExecutor(null);
+        httpServer.start();
         socket.getThread().start();
         while (true) {
             try {
@@ -234,4 +297,59 @@ public class NewMain implements CallbackInterface {
         }
     }
 
+    private Map<String, String> getParameters(final String query) {
+        final Map<String, String> result = new HashMap<>();
+        for (final String param : query.split("&")) {
+            try {
+                final String[] pair = param.split("=");
+                if (pair.length != 2) {
+                    LOG.info(String.format("Invalid Parameter: %s", java.util.Arrays.toString(pair)));
+                    continue;
+                }
+                result.put(pair[0], URLDecoder.decode(pair[1], "UTF-8"));
+            } catch (UnsupportedEncodingException ex) {
+                LOG.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
+        return result;
+    }
+
+    private String handleStatus(final String query) {
+        final Map<String, String> params = getParameters(query);
+        if (!params.containsKey("type")) {
+            return "need type";
+        }
+
+        final String type = params.get("type");
+
+        if ("voltage".equalsIgnoreCase(type)) {
+            return String.format("Voltage: %.2f", lastVoltage);
+        } else if ("dc".equalsIgnoreCase(type)) {
+            return deviceSettings.getFrameInfoDCData();
+        } else if ("ac".equalsIgnoreCase(type)) {
+            return deviceSettings.getFrameInfoACData();
+        } else if ("led".equalsIgnoreCase(type)) {
+            return deviceSettings.getFrameLEDData();
+        } else {
+            return "invalid type";
+        }
+    }
+
+    @Override
+    public void handle(final HttpExchange he) throws IOException {
+        final String path = he.getRequestURI().getPath();
+        final String query = he.getRequestURI().getQuery();
+        LOG.info(String.format("%s - %s - %s", he.getRemoteAddress(), path, query));
+        final String result;
+        if ("/status".equalsIgnoreCase(path)) {
+            result = handleStatus(query);
+        } else {
+            result = "fail";
+
+        }
+        he.sendResponseHeaders(200, result.length());
+        try (final OutputStream os = he.getResponseBody()) {
+            os.write(result.getBytes());
+        }
+    }
 }
