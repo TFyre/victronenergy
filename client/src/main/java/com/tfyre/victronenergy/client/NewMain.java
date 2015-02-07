@@ -69,7 +69,7 @@ public class NewMain implements CallbackInterface, HttpHandler {
     }
 
     public NewMain() throws IOException {
-        lastVoltage = -200;
+        lastVoltage = 100;
         socket = new Socket(this);
         httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
     }
@@ -162,12 +162,12 @@ public class NewMain implements CallbackInterface, HttpHandler {
 
     private void handleFrameInfoAC(final FrameInfoAC frame) {
         final double newVoltage = deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor());
-        final double changeVoltage = (lastVoltage - newVoltage) / newVoltage;
+        final double changeVoltage = (newVoltage - lastVoltage) / newVoltage;
         if (Math.abs(changeVoltage) > 0.1) {
+            final String msg = String.format("Voltage: %.2f change[%.2f]", newVoltage, lastVoltage - newVoltage);
             lastVoltage = newVoltage;
-            final String msg = String.format("Voltage: %.2f change[%.2f]", lastVoltage, changeVoltage*100);
             sendWhatsApp(FRANCOIS, msg);
-            //sendWhatsApp(DANELLE, msg);
+            sendWhatsApp(DANELLE, msg);
         }
         deviceSettings.setFrameInfoAC(frame);
         if (LOG.isLoggable(Level.FINER)) {
@@ -180,10 +180,10 @@ public class NewMain implements CallbackInterface, HttpHandler {
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(deviceSettings.getFrameLEDData());
         }
-        final String led = deviceSettings.getFrameLEDData();
+        final String led = String.format("%s\n%s", frame.getOnString(), frame.getBlinkString());
         if (!led.equalsIgnoreCase(lastLED)) {
             lastLED = led;
-            sendWhatsApp(FRANCOIS, String.format("LED: %s", lastLED.trim()));
+            sendWhatsApp(FRANCOIS, deviceSettings.getFrameLEDData());
         }
     }
 
@@ -342,6 +342,12 @@ public class NewMain implements CallbackInterface, HttpHandler {
         } else if ("restart".equalsIgnoreCase(type)) {
             System.exit(0);
             return "restarting";
+        } else if ("help".equalsIgnoreCase(type)) {
+            return "voltage\n"
+                    + "dc\n"
+                    + "ac\n"
+                    + "led\n"
+                    + "restart";
         } else {
             return "invalid type";
         }
