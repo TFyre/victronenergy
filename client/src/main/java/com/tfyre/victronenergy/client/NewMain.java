@@ -164,6 +164,7 @@ public class NewMain implements CallbackInterface, HttpHandler {
             lastVoltage = deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor());
             final String msg = String.format("Voltage: %.2f", lastVoltage);
             sendWhatsApp(FRANCOIS, msg);
+            sendWhatsApp(DANELLE, msg);
         }
         deviceSettings.setFrameInfoAC(frame);
         if (LOG.isLoggable(Level.FINER)) {
