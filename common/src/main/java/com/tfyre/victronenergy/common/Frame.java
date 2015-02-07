@@ -44,6 +44,9 @@ public abstract class Frame {
             case 'A':
                 return new FrameAddress()
                         .withData(data);
+            case 'L':
+                return new FrameLED()
+                        .withData(data);
             case 'V':
                 return new FrameVersion()
                         .withData(data);

@@ -62,6 +62,17 @@ public class FrameCommand extends Frame {
         return result;
     }
 
+    public int getOffset() {
+        final byte[] _data = getData();
+        if (_data.length < 8) {
+            return 0;
+        }
+        if (_data[5] != Command.RESPONSE_RAM_VAR_INFO2.getCommand()) {
+            return 0;
+        }
+        return ((_data[7] & 0xff) << 8) + (_data[6] & 0xff); 
+    }
+    
     @Override
     public byte[] getRequest() {
         return new byte[]{(byte) 'W', (byte) command.getCommand(), (byte) info1};

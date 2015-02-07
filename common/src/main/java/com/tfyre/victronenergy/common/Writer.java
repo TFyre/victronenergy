@@ -66,7 +66,9 @@ public class Writer extends Common {
                 _data[1] = (byte) 0xff;
                 System.arraycopy(_frame, 0, _data, 2, _frame.length);
                 _data[_data.length - 1] = getCRC(_data);
-                System.out.println("write: " + toHex(_data));
+                if (LOG.isLoggable(Level.FINE)) {
+                    LOG.fine(toHex(_data));
+                }
                 socket_os.write(_data);
                 //Thread.sleep(1000);
             } catch (IOException ex) {

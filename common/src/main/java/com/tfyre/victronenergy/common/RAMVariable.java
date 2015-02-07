@@ -11,6 +11,10 @@ package com.tfyre.victronenergy.common;
  */
 public enum RAMVariable {
 
+    UMAIN("Main Voltage Scale", 0x00),
+    IMAIN("Main Current Scale", 0x01),
+    UINVERTER("Inverter Voltage Scale", 0x02),
+    IINVERTER("Inverter Current Scale", 0x03),
     UBAT("Battery Voltage Scale", 0x04),
     IBAT("Battery Current Scale", 0x05),
     ITIME("Inverter Period Time", 0x07),

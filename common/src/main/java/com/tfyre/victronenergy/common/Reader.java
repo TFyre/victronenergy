@@ -64,7 +64,9 @@ public class Reader extends Common {
             return false;
         }
         final byte[] _data = data.toByteArray();
-        System.out.println("start: " + toHex(_data));
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(String.format("start: %s", toHex(_data)));
+        }
         for (int i = 0; i < _data.length; i++) {
             final int b = _data[i] & 0xff;
             if (b == 0) {
@@ -79,14 +81,20 @@ public class Reader extends Common {
             if (c != 0) {
                 continue;
             }
-            //System.out.println("led: " + hasLED);
+            if (LOG.isLoggable(Level.FINER)) {
+                LOG.finer(String.format("led: %s", hasLED));
+            }
             final byte[] frameData = new byte[len - 2];
             System.arraycopy(_data, i + 1, frameData, 0, len - 2);
-            //System.out.println("frame: " + toHex(frameData));
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine(toHex(frameData));
+            }
             getSocket().addReaderFrame(Frame.fromData(frameData));
             data.reset();
             data.write(_data, i + b, _data.length - i - len);
-            //System.out.println("end: " + toHex(data.toByteArray()));
+            if (LOG.isLoggable(Level.FINER)) {
+                LOG.finer(String.format("end: %s", toHex(data.toByteArray())));
+            }
             return true;
         }
         return false;
