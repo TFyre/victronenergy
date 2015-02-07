@@ -55,6 +55,7 @@ public class NewMain implements CallbackInterface, HttpHandler {
     private boolean hasSettings;
     private RAMVariable ramVariable;
     private double lastVoltage;
+    private String lastLED;
 
     private final DeviceSettings deviceSettings = new DeviceSettings();
 
@@ -160,11 +161,13 @@ public class NewMain implements CallbackInterface, HttpHandler {
     }
 
     private void handleFrameInfoAC(final FrameInfoAC frame) {
-        if (lastVoltage < 0) {
-            lastVoltage = deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor());
-            final String msg = String.format("Voltage: %.2f", lastVoltage);
+        final double newVoltage = deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor());
+        final double changeVoltage = (lastVoltage - newVoltage) / newVoltage;
+        if (Math.abs(changeVoltage) > 0.1) {
+            lastVoltage = newVoltage;
+            final String msg = String.format("Voltage: %.2f change[%.2f]", lastVoltage, changeVoltage*100);
             sendWhatsApp(FRANCOIS, msg);
-            sendWhatsApp(DANELLE, msg);
+            //sendWhatsApp(DANELLE, msg);
         }
         deviceSettings.setFrameInfoAC(frame);
         if (LOG.isLoggable(Level.FINER)) {
@@ -176,6 +179,11 @@ public class NewMain implements CallbackInterface, HttpHandler {
         deviceSettings.setFrameLED(frame);
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(deviceSettings.getFrameLEDData());
+        }
+        final String led = deviceSettings.getFrameLEDData();
+        if (!led.equalsIgnoreCase(lastLED)) {
+            lastLED = led;
+            sendWhatsApp(FRANCOIS, String.format("LED: %s", lastLED.trim()));
         }
     }
 
@@ -331,6 +339,9 @@ public class NewMain implements CallbackInterface, HttpHandler {
             return deviceSettings.getFrameInfoACData();
         } else if ("led".equalsIgnoreCase(type)) {
             return deviceSettings.getFrameLEDData();
+        } else if ("restart".equalsIgnoreCase(type)) {
+            System.exit(0);
+            return "restarting";
         } else {
             return "invalid type";
         }

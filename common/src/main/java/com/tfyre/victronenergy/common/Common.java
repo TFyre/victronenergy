@@ -29,7 +29,7 @@ public abstract class Common implements Runnable {
         return thread;
     }
 
-    public String toHex(final byte[] data) {
+    public static String toHex(final byte[] data) {
         final StringBuilder sb = new StringBuilder();
         for (final byte b : data) {
             if ((b < 32) || (b > 126)) {

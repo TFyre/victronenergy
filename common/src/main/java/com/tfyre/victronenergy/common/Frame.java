@@ -5,7 +5,6 @@
  */
 package com.tfyre.victronenergy.common;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -59,7 +58,7 @@ public abstract class Frame {
                 return new FrameCommand()
                         .withData(data);
             default:
-                LOG.severe(String.format("Invalid Frame: %s", java.util.Arrays.toString(data)));
+                LOG.severe(String.format("Invalid Frame: %s", Common.toHex(data)));
                 System.exit(1);
                 throw new RuntimeException("Invalid Frame");
         }
@@ -72,7 +71,7 @@ public abstract class Frame {
             case (byte) 0xff:
                 return fromDataFF(data);
             default:
-                LOG.severe(String.format("Invalid Frame: %s", java.util.Arrays.toString(data)));
+                LOG.severe(String.format("Invalid Frame: %s", Common.toHex(data)));
                 System.exit(1);
                 throw new RuntimeException("Invalid Frame");
         }
