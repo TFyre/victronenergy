@@ -56,28 +56,31 @@ public class FrameLED extends Frame {
     private String getLedString(final int data) {
         final StringBuilder sb = new StringBuilder();
         if ((data & 0x01) == 0x01) {
-            sb.append("Mains");
+            sb.append("Mains,");
         }
         if ((data & 0x02) == 0x02) {
-            sb.append("Absorption");
+            sb.append("Absorption,");
         }
         if ((data & 0x04) == 0x04) {
-            sb.append("Bulk");
+            sb.append("Bulk,");
         }
         if ((data & 0x08) == 0x08) {
-            sb.append("Float");
+            sb.append("Float,");
         }
         if ((data & 0x10) == 0x10) {
-            sb.append("Inverter");
+            sb.append("Inverter,");
         }
         if ((data & 0x20) == 0x20) {
-            sb.append("Overload");
+            sb.append("Overload,");
         }
         if ((data & 0x40) == 0x40) {
-            sb.append("Low Battery");
+            sb.append("Low Battery,");
         }
         if ((data & 0x80) == 0x80) {
-            sb.append("Temperature");
+            sb.append("Temperature,");
+        }
+        if (sb.length() == 0) {
+            sb.append("None");
         }
         return sb.toString();
     }
