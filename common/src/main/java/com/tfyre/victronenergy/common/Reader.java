@@ -92,6 +92,7 @@ public class Reader extends Common {
             final Frame frame = Frame.fromData(frameData);
             if (frame instanceof FrameInvalid) {
                 LOG.severe(toHex(_data));
+                continue;
             }
             getSocket().addReaderFrame(frame);
             data.reset();
