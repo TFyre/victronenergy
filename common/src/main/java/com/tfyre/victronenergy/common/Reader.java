@@ -89,7 +89,11 @@ public class Reader extends Common {
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine(toHex(frameData));
             }
-            getSocket().addReaderFrame(Frame.fromData(frameData));
+            final Frame frame = Frame.fromData(frameData);
+            if (frame instanceof FrameInvalid) {
+                LOG.severe(toHex(_data));
+            }
+            getSocket().addReaderFrame(frame);
             data.reset();
             data.write(_data, i + b, _data.length - i - len);
             if (LOG.isLoggable(Level.FINER)) {

@@ -166,12 +166,12 @@ public class NewMain implements CallbackInterface, HttpHandler {
         final double newVoltage = deviceSettings.getScaledValue1(RAMVariable.UMAIN, frame.getVoltageFactor());
         final double changeVoltage = (newVoltage - lastVoltage) / newVoltage;
         if (Math.abs(changeVoltage) > 0.1) {
-            final String msg = String.format("Voltage: %.2f change[%.2f]", newVoltage, lastVoltage - newVoltage);
-            lastVoltage = newVoltage;
+            final String msg = String.format("Voltage: %.2f change[%.2f]", newVoltage, newVoltage - lastVoltage);
             sendWhatsApp(FRANCOIS, msg);
             if (lastVoltage != 100) {
                 sendWhatsApp(DANELLE, msg);
             }
+            lastVoltage = newVoltage;
         }
         deviceSettings.setFrameInfoAC(frame);
         if (LOG.isLoggable(Level.FINER)) {
@@ -212,9 +212,9 @@ public class NewMain implements CallbackInterface, HttpHandler {
         } else if (frame instanceof FrameLED) {
             handleFrameLED((FrameLED) frame);
         } else if (frame instanceof FrameInvalid) {
-            sendWhatsApp(FRANCOIS, "Invalid Frame: "+Common.toHex(frame.getData()));
+            sendWhatsApp(FRANCOIS, "Invalid Frame: " + Common.toHex(frame.getData()));
         }
-       
+
     }
 
     private boolean processQueue() {
