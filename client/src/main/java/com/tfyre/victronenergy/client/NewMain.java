@@ -5,6 +5,7 @@
  */
 package com.tfyre.victronenergy.client;
 
+import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -61,6 +62,8 @@ public class NewMain implements CallbackInterface, HttpHandler {
 
     private final DeviceSettings deviceSettings = new DeviceSettings();
 
+    private Config config;
+
     /**
      * @param args the command line arguments
      */
@@ -70,10 +73,17 @@ public class NewMain implements CallbackInterface, HttpHandler {
         _main.run();
     }
 
+    private void loadConfig() throws IOException {
+        final byte[] dataB = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("config.gson"));
+        final String dataS = new String(dataB);
+        config = new Gson().fromJson(dataS, Config.class);
+    }
+
     public NewMain() throws IOException {
+        loadConfig();
         lastVoltage = 100;
         socket = new Socket(this);
-        httpServer = HttpServer.create(new InetSocketAddress(8000), 0);
+        httpServer = HttpServer.create(new InetSocketAddress(config.getPort()), 0);
     }
 
     private void handleFrameAddress(final FrameAddress frame) {
@@ -143,7 +153,11 @@ public class NewMain implements CallbackInterface, HttpHandler {
 
     private void sendWhatsApp(final String to, final String msg) {
         try {
-            final URL url = new URL(String.format("http://10.1.0.20:8000/send?to=%s&msg=%s", to, URLEncoder.encode(msg, "UTF-8")));
+
+            final URL url = new URL(config.getUrl()
+                    .replace("%TO%", to)
+                    .replace("%MSG%", URLEncoder.encode(msg, "UTF-8"))
+            );
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine(url.toString());
             }
@@ -346,6 +360,12 @@ public class NewMain implements CallbackInterface, HttpHandler {
             return deviceSettings.getFrameInfoACData();
         } else if ("led".equalsIgnoreCase(type)) {
             return deviceSettings.getFrameLEDData();
+        } else if ("all".equalsIgnoreCase(type)) {
+            return String.format("%s\n%s\n%s",
+                    deviceSettings.getFrameInfoDCData(),
+                    deviceSettings.getFrameInfoACData(),
+                    deviceSettings.getFrameLEDData()
+            );
         } else if ("restart".equalsIgnoreCase(type)) {
             System.exit(0);
             return "restarting";
