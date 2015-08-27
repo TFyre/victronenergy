@@ -15,6 +15,8 @@ public class Config {
 
     private String url;
     private int port;
+    private String socatHost;
+    private int socatPort;
 
     private final List<String> notifyDetail = new java.util.ArrayList<>();
     private final List<String> notifyNormal = new java.util.ArrayList<>();
@@ -61,6 +63,22 @@ public class Config {
     public void setNotifyNormal(final List<String> notifyNormal) {
         this.notifyNormal.clear();
         this.notifyNormal.addAll(notifyNormal);
+    }
+
+    public String getSocatHost() {
+        return socatHost;
+    }
+
+    public void setSocatHost(String socatHost) {
+        this.socatHost = socatHost;
+    }
+
+    public int getSocatPort() {
+        return socatPort;
+    }
+
+    public void setSocatPort(int socatPort) {
+        this.socatPort = socatPort;
     }
 
 }

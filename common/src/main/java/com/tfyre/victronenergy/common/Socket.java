@@ -24,7 +24,12 @@ public class Socket implements Runnable {
     private final Thread thread;
     private final CallbackInterface callback;
 
-    public Socket(CallbackInterface callback) {
+    private final String host;
+    private final int port;
+
+    public Socket(final CallbackInterface callback, final String host, final int port) {
+        this.host = host;
+        this.port = port;
         this.thread = new Thread(this);
         this.thread.setName("socket");
         this.thread.setDaemon(true);
@@ -36,17 +41,17 @@ public class Socket implements Runnable {
     }
 
     private void open() throws IOException {
-        socket = new java.net.Socket("10.1.0.21", 10000);
+        socket = new java.net.Socket(host, port);
         writer = new Writer(this, socket.getOutputStream());
         writer.getThread().start();
         reader = new Reader(this, socket.getInputStream());
         reader.getThread().start();
     }
-    
+
     protected void addReaderFrame(final Frame frame) {
         callback.processFrame(frame);
     }
-    
+
     public void addWriterFrame(final Frame frame) {
         writer.addFrame(frame);
     }

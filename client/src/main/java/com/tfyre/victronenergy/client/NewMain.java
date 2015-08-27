@@ -81,7 +81,7 @@ public class NewMain implements CallbackInterface, HttpHandler {
     public NewMain() throws IOException {
         loadConfig();
         lastVoltage = 100;
-        socket = new Socket(this);
+        socket = new Socket(this, config.getSocatHost(), config.getSocatPort());
         httpServer = HttpServer.create(new InetSocketAddress(config.getPort()), 0);
     }
 
