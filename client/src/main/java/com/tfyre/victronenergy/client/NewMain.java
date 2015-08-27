@@ -35,6 +35,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.logging.Level;
@@ -47,8 +48,6 @@ import java.util.logging.Logger;
 public class NewMain implements CallbackInterface, HttpHandler {
 
     private static final Logger LOG = Logger.getLogger(NewMain.class.getName());
-    private static final String FRANCOIS = "27829403901";
-    private static final String DANELLE = "27823066444";
     private final Queue<Frame> queue = new java.util.concurrent.LinkedBlockingQueue<>();
     private final Socket socket;
     private final HttpServer httpServer;
@@ -151,6 +150,12 @@ public class NewMain implements CallbackInterface, HttpHandler {
         }
     }
 
+    private void sendWhatsApp(final List<String> to, final String msg) {
+        for (final String _to : to) {
+            sendWhatsApp(_to, msg);
+        }
+    }
+
     private void sendWhatsApp(final String to, final String msg) {
         try {
 
@@ -181,9 +186,9 @@ public class NewMain implements CallbackInterface, HttpHandler {
         final double changeVoltage = (newVoltage - lastVoltage) / newVoltage;
         if (Math.abs(changeVoltage) > 0.1) {
             final String msg = String.format("Voltage: %.2f change[%.2f]", newVoltage, newVoltage - lastVoltage);
-            sendWhatsApp(FRANCOIS, msg);
+            sendWhatsApp(config.getNotifyDetail(), msg);
             if (lastVoltage != 100) {
-                sendWhatsApp(DANELLE, msg);
+                sendWhatsApp(config.getNotifyNormal(), msg);
             }
             lastVoltage = newVoltage;
         }
@@ -201,7 +206,7 @@ public class NewMain implements CallbackInterface, HttpHandler {
         final String led = String.format("%s\n%s", frame.getOnString(), frame.getBlinkString());
         if (!led.equalsIgnoreCase(lastLED)) {
             lastLED = led;
-            sendWhatsApp(FRANCOIS, deviceSettings.getFrameLEDData());
+            sendWhatsApp(config.getNotifyDetail(), deviceSettings.getFrameLEDData());
         }
     }
 
@@ -226,7 +231,7 @@ public class NewMain implements CallbackInterface, HttpHandler {
         } else if (frame instanceof FrameLED) {
             handleFrameLED((FrameLED) frame);
         } else if (frame instanceof FrameInvalid) {
-            sendWhatsApp(FRANCOIS, "Invalid Frame: " + Common.toHex(frame.getData()));
+            sendWhatsApp(config.getNotifyDetail(), "Invalid Frame: " + Common.toHex(frame.getData()));
         }
 
     }
